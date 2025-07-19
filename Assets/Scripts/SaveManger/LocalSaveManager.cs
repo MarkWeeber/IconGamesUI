@@ -76,9 +76,10 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
                 await writer.WriteAsync(data);
             }
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            Debug.LogError("Could not save locally");
+            Debug.LogError("Could not save locally " + e.Message);
+            LogUI.Instance.SendLogInformation("Could not save locally " + e.Message, LogUI.MessageType.ERROR);
         }
     }
 
@@ -89,6 +90,7 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
         if (_progressData == null)
         {
             Debug.LogError("Profile not loaded");
+            LogUI.Instance.SendLogInformation("Profile not loaded", LogUI.MessageType.ERROR);
             return;
         }
         int levelIndex = _progressData.ProgressMetrics.FindIndex(n => n.LevelId == levelId);
@@ -125,6 +127,7 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
         if (allProgressData.Count == 0)
         {
             Debug.LogError("Could not get all profiles");
+            LogUI.Instance.SendLogInformation("Could not get all profiles", LogUI.MessageType.ERROR);
             return default;
         }
         return allProgressData
@@ -154,6 +157,7 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
         if (profileFiles.Length == 0)
         {
             Debug.LogWarning("No profile save files found");
+            LogUI.Instance.SendLogInformation("No profile save files found", LogUI.MessageType.WARNING);
             return _result;
         }
         foreach (string profileFile in profileFiles)
@@ -207,6 +211,7 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
         catch (Exception)
         {
             Debug.LogWarning("Save file corrupted, could not read");
+            LogUI.Instance.SendLogInformation("Save file corrupted, could not read", LogUI.MessageType.WARNING);
             return false;
         }
     }

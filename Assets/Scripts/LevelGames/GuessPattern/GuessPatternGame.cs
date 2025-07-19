@@ -127,6 +127,7 @@ public class GuessPatternGame : MonoBehaviour
         _scoresUI.ShowPanel();
         // get all scores on this level
         var allScoresOnThisLevel = await _localSaveManager.GetScores(_levelSceneInfo.LevelId);
+        LogUI.Instance.SendLogInformation("TEST1: " + allScoresOnThisLevel.Length.ToString() ,LogUI.MessageType.SUCCESS);
         // feed the scores to score board
         _scoresUI.AddScores(allScoresOnThisLevel);
     }
