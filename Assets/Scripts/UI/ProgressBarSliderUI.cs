@@ -14,7 +14,7 @@ public class ProgressBarSliderUI : MonoBehaviour
     private ProgressMarkUI _progressMarkUI;
     private int _currentStage = 0;
     private float _distanceBetweenMarks;
-
+    private AudioManager _audioManager;
 
     public void Initialize()
     {
@@ -25,11 +25,17 @@ public class ProgressBarSliderUI : MonoBehaviour
         //_slider.onValueChanged.AddListener(SliderValueChanged); // for testing purposes from UI inspector, need to comment this line before build
     }
 
+    private void Start()
+    {
+        _audioManager = AudioManager.Instance;
+    }
+
     public void PushProgress()
     {
         _currentStage++;
         float newStage = _currentStage * _distanceBetweenMarks;
         ManageSliderChange(newStage);
+        _audioManager.PlaySuccessSound();
     }
 
     private void PlaceCheckMarksAtStart()

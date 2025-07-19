@@ -24,6 +24,8 @@ public class InGameMenuUI : SingletonBehaviour<InGameMenuUI>
     public Action<float> EffectsSoundVolumeChanged;
     public Action<float> MusicVolumeChanged;
 
+    public bool OnMainMenu;
+
     public float EffectsSoundVolume { get => _effectsSoundVolume; }
     private float _effectsSoundVolume;
     public float MusicVolume { get => _musicVolume; }
@@ -77,12 +79,14 @@ public class InGameMenuUI : SingletonBehaviour<InGameMenuUI>
             _settingsButton.gameObject.SetActive(true);
             _sceneNavigationButton.gameObject.SetActive(false);
             _currentLevelInformationButton.gameObject.SetActive(false);
+            OnMainMenu = true;
         }
         else
         {
             _settingsButton.gameObject.SetActive(true);
             _sceneNavigationButton.gameObject.SetActive(true);
             _currentLevelInformationButton.gameObject.SetActive(true);
+            OnMainMenu = false;
         }
     }
 

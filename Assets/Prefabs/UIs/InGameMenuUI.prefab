@@ -1555,6 +1555,7 @@ MonoBehaviour:
   _soundSettingsBackgroundPanel: {fileID: 3023493132590288125}
   _settingsButton: {fileID: 3023493133741476070}
   _currentLevelInformationButton: {fileID: 3023493132475606403}
+  OnMainMenu: 0
 --- !u!1 &3023493133116263245
 GameObject:
   m_ObjectHideFlags: 0
@@ -1858,8 +1859,8 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: 
+      - m_Target: {fileID: 3023493133098465773}
+        m_TargetAssemblyTypeName: InGameMenuUI, Assembly-CSharp
         m_MethodName: OnMusicVolumeChange
         m_Mode: 1
         m_Arguments:
@@ -2285,8 +2286,8 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: 
+      - m_Target: {fileID: 3023493133098465773}
+        m_TargetAssemblyTypeName: InGameMenuUI, Assembly-CSharp
         m_MethodName: OnEffectsSoundChange
         m_Mode: 1
         m_Arguments:
