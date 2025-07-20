@@ -1,15 +1,22 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 
 [LazyInstatiate(true)]
 public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
 {
     private const string PREFIX = "_save.dat";
     private const string PASS_PHRASE = "_+$3a0-1!d";
+    // JavaScript plugin for WebGL
+    [DllImport("__Internal")]
+    private static extern void SyncFiles();
+    [DllImport("__Internal")]
+    private static extern void AsyncDelay(int ms, Action callback);
     // needed to control whether to cipher the data before saving or not
     [SerializeField] private bool _cipheringEnabled = false;
 
@@ -23,7 +30,7 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
     }
 
     // lazy instantiation for testing purposes in Editor
-    protected async override void LazyInstantiate()
+    protected override async void LazyInstantiate()
     {
         _progressData = new ProgressData("Default");
         await SaveData();
@@ -37,7 +44,7 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
 
     // a user function to enter their name
     // in the end this script should hold a Progress Data for current player
-    public async Task SubmitProfileName(string profileName)
+    public async UniTask SubmitProfileName(string profileName)
     {
         // check if profile already exists
         var (exists, existingProfile) = await ReadProfileTextAsync(profileName);
@@ -61,7 +68,7 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
 
     // a main function to be called from other scripts
     // should they need to save data
-    public async Task SaveData()
+    public async UniTask SaveData()
     {
         string fullPath = GetFullPath(_progressData.ProfileName);
         string data = JsonUtility.ToJson(_progressData);
@@ -71,9 +78,27 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
         }
         try
         {
-            using (StreamWriter writer = File.CreateText(fullPath))
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
             {
-                await writer.WriteAsync(data);
+                File.WriteAllText(fullPath, data);
+                SyncFiles();
+                await UniTask.Delay(50);
+                if (File.Exists(fullPath))
+                {
+                    string verify = File.ReadAllText(fullPath);
+                    if (verify != data)
+                    {
+                        Debug.Log("Retry saving");
+                        File.WriteAllText(fullPath, data);
+                    }
+                }
+            }
+            else
+            {
+                using (StreamWriter writer = File.CreateText(fullPath))
+                {
+                    await writer.WriteAsync(data);
+                }
             }
         }
         catch (Exception e)
@@ -83,9 +108,28 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
         }
     }
 
+    private IEnumerator SaveDataRoutine(string path, string data)
+    {
+        Debug.Log("Save Data Routine");
+        File.WriteAllText(path, data);
+        SyncFiles();
+        yield return _delay;
+        if (File.Exists(path))
+        {
+            string verify = File.ReadAllText(path);
+            if (verify != data)
+            {
+                Debug.Log("Retry saving");
+                File.WriteAllText(path, data);
+            }
+        }
+    }
+
+    private WaitForSecondsRealtime _delay = new WaitForSecondsRealtime(0.1f);
+
     // an example of code to be called 
     // in order to save score for current player profile
-    public void SubmitScore(int levelId, float score)
+    public async void SubmitScore(int levelId, float score)
     {
         if (_progressData == null)
         {
@@ -115,14 +159,15 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
             _progressData.ProgressMetrics.Add(progressMetric);
         }
         // silent calling async Task to save data
-        _ = SaveData();
+        await SaveData();
     }
 
     // another necessary function to be called
     // whenever it's necessary to see scores from all player
     // for given level ID
-    public async Task<Score[]> GetScores(int levelId)
+    public async UniTask<Score[]> GetScores(int levelId)
     {
+        Debug.Log("Get Scores Function");
         List<ProgressData> allProgressData = await GetProgressDataFromAllProfiles();
         if (allProgressData.Count == 0)
         {
@@ -130,7 +175,7 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
             LogUI.Instance.SendLogInformation("Could not get all profiles", LogUI.MessageType.ERROR);
             return default;
         }
-        return allProgressData
+        var result = allProgressData
             .SelectMany(
                         profile => profile.ProgressMetrics
                             .Where(metric => metric.LevelId == levelId)
@@ -143,13 +188,16 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
                                         }
                                     )
                         ).OrderByDescending(score => score.BestTime).ToArray();
+        Debug.Log("Scores count: " + result.Length);
+        return result;
         // it is important to reverse order, as when score UIs being instantiated, they are placed last in hiearchy by default
     }
 
     // a helper function to get all Progress Data from other players
     // which were saved previously
-    private async Task<List<ProgressData>> GetProgressDataFromAllProfiles()
+    private async UniTask<List<ProgressData>> GetProgressDataFromAllProfiles()
     {
+        Debug.Log("GetProgressDataFromAllProfiles");
         List<ProgressData> _result = new List<ProgressData>();
         string[] allFilesInPersisntenFolder = Directory.GetFiles(Application.persistentDataPath);
         string[] matchingFiles = allFilesInPersisntenFolder.Where(file => Path.GetFileName(file).Contains(PREFIX)).ToArray();
@@ -160,6 +208,7 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
             LogUI.Instance.SendLogInformation("No profile save files found", LogUI.MessageType.WARNING);
             return _result;
         }
+        Debug.Log("GetProgressDataFromAllProfiles MID");
         foreach (string profileFile in profileFiles)
         {
             string profileName = profileFile.Replace(PREFIX, "");
@@ -172,21 +221,50 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
                 }
             }
         }
+        Debug.Log("GetProgressDataFromAllProfiles result count: " + _result.Count);
         return _result;
     }
 
     // a helper function
-    private async Task<(bool, string)> ReadProfileTextAsync(string profileName)
+    private async UniTask<(bool, string)> ReadProfileTextAsync(string profileName)
     {
+        Debug.Log("ReadProfileTextAsync");
         string assumedFile = GetFullPath(profileName);
         string fileText;
         if (File.Exists(assumedFile))
         {
-            using (StreamReader reader = File.OpenText(assumedFile))
+            Debug.Log("ReadProfileTextAsync MID");
+            try
             {
-                fileText = await reader.ReadToEndAsync();
-                return (true, fileText);
+                using (StreamReader reader = File.OpenText(assumedFile))
+                {
+                    Debug.Log("ReadProfileTextAsync BEFORE READ");
+                    if (Application.platform == RuntimePlatform.WebGLPlayer)
+                    {
+                        Debug.Log("Before Delay 1");
+                        await UniTask.Delay(50);
+                        Debug.Log("After Delay 1");
+                        SyncFiles();
+                        Debug.Log("Before Delay 2");
+                        await UniTask.Delay(50);
+                        Debug.Log("After Delay 2");
+                        fileText = reader.ReadToEnd();
+                        Debug.Log("ReadProfileTextAsync AFTER READ");
+                        return (true, fileText);
+                    }
+                    else
+                    {
+                        fileText = await reader.ReadToEndAsync();
+                        Debug.Log("ReadProfileTextAsync AFTER READ");
+                        return (true, fileText);
+                    }
+                }
             }
+            catch (Exception e)
+            {
+                Debug.LogError("Reading profile text error " + e.Message);
+            }
+
         }
         return (false, string.Empty);
     }

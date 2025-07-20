@@ -65,12 +65,7 @@ public class EquationGame : MonoBehaviour
         Debug.Log(_pickedEquationRow.ToString());
         // random numbers setup for members
         int firstMissingMember = Random.Range(0, 4);
-        int secondMissingMember = Random.Range(0, 4);
-        // make sure first and second members are not equal
-        while (firstMissingMember == secondMissingMember)
-        {
-            secondMissingMember = Random.Range(0, 4);
-        }
+        int secondMissingMember = (firstMissingMember + Random.Range(1, 4)) % 4;
         // fill in equation members
         for (int i = 0; i < 4; i++)
         {
@@ -85,12 +80,7 @@ public class EquationGame : MonoBehaviour
         }
         // random numbers setup for variants
         int firstCorrectVariant = Random.Range(0, 5);
-        int secondCorrectVariant = Random.Range(0, 5);
-        // make sure first and second variants are not equal
-        while (firstCorrectVariant == secondCorrectVariant)
-        {
-            secondMissingMember = Random.Range(0, 5);
-        }
+        int secondCorrectVariant = (firstCorrectVariant + Random.Range(1, 5)) % 5;
         // fill in variants
         for (int i = 0; i < 5; i++)
         {

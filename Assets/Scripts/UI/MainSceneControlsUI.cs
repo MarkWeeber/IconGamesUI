@@ -9,6 +9,7 @@ public class MainSceneControlsUI : MonoBehaviour
     [SerializeField] private Transform _profilePanel;
     [SerializeField] private Transform _levelSelectPanel;
 
+    // web-gl update
     private LocalSaveManager _localSaveManager;
     private UserProfileViewUI _userProfileViewUI;
     private string _enteredPlayerName;

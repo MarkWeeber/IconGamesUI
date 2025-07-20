@@ -11,6 +11,7 @@ public class GuessPatternGame : MonoBehaviour
     [SerializeField] private int _maxRandomNumber = 99;
     [SerializeField] private ProgressBarSliderUI _progressBarSliderUI;
 
+    // web-gl update
     private LocalSaveManager _localSaveManager;
     private PatternFrameUI[] _patternFrameUIs;
     private PatternFrameUI _patterFrameUI;
@@ -77,7 +78,7 @@ public class GuessPatternGame : MonoBehaviour
         }
     }
 
-    private async void OnPatternFrameClicked(PatternFrameUI patterFrameUI)
+    private void OnPatternFrameClicked(PatternFrameUI patterFrameUI)
     {
         if (_clickedCount == _patternFrameUIs.Length - 1) // last member
         {
@@ -86,11 +87,11 @@ public class GuessPatternGame : MonoBehaviour
             if (IsArraySortedAscending(_selectedPattern))
             {
                 // win condition
-                await ResetPattern(true);
+                ResetPattern(true);
             }
             else
             {
-                await ResetPattern();
+                ResetPattern();
             }
             ClearArray(_selectedPattern);
         }
@@ -102,7 +103,7 @@ public class GuessPatternGame : MonoBehaviour
 
     }
 
-    private async Task ResetPattern(bool won = false)
+    private void ResetPattern(bool won = false)
     {
         if (won)
         {
@@ -112,7 +113,7 @@ public class GuessPatternGame : MonoBehaviour
         if (_currentStage >= _levelSceneInfo.LevelStageCount) // all stages complete
         {
             // level win
-            await OnLevelWin();
+            OnLevelWin();
         }
         else
         {
@@ -120,7 +121,7 @@ public class GuessPatternGame : MonoBehaviour
         }
     }
 
-    private async Task OnLevelWin()
+    private async void OnLevelWin()
     {
         _localSaveManager.SubmitScore(_levelSceneInfo.LevelId, _timerUI.Timer);
         // TO-DO call scores board
