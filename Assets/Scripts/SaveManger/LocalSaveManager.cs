@@ -15,8 +15,6 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
     // JavaScript plugin for WebGL
     [DllImport("__Internal")]
     private static extern void SyncFiles();
-    [DllImport("__Internal")]
-    private static extern void AsyncDelay(int ms, Action callback);
     // needed to control whether to cipher the data before saving or not
     [SerializeField] private bool _cipheringEnabled = false;
 
@@ -88,7 +86,6 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
                     string verify = File.ReadAllText(fullPath);
                     if (verify != data)
                     {
-                        Debug.Log("Retry saving");
                         File.WriteAllText(fullPath, data);
                     }
                 }
@@ -107,25 +104,6 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
             LogUI.Instance.SendLogInformation("Could not save locally " + e.Message, LogUI.MessageType.ERROR);
         }
     }
-
-    private IEnumerator SaveDataRoutine(string path, string data)
-    {
-        Debug.Log("Save Data Routine");
-        File.WriteAllText(path, data);
-        SyncFiles();
-        yield return _delay;
-        if (File.Exists(path))
-        {
-            string verify = File.ReadAllText(path);
-            if (verify != data)
-            {
-                Debug.Log("Retry saving");
-                File.WriteAllText(path, data);
-            }
-        }
-    }
-
-    private WaitForSecondsRealtime _delay = new WaitForSecondsRealtime(0.1f);
 
     // an example of code to be called 
     // in order to save score for current player profile
@@ -167,7 +145,6 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
     // for given level ID
     public async UniTask<Score[]> GetScores(int levelId)
     {
-        Debug.Log("Get Scores Function");
         List<ProgressData> allProgressData = await GetProgressDataFromAllProfiles();
         if (allProgressData.Count == 0)
         {
@@ -188,7 +165,6 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
                                         }
                                     )
                         ).OrderByDescending(score => score.BestTime).ToArray();
-        Debug.Log("Scores count: " + result.Length);
         return result;
         // it is important to reverse order, as when score UIs being instantiated, they are placed last in hiearchy by default
     }
@@ -197,7 +173,6 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
     // which were saved previously
     private async UniTask<List<ProgressData>> GetProgressDataFromAllProfiles()
     {
-        Debug.Log("GetProgressDataFromAllProfiles");
         List<ProgressData> _result = new List<ProgressData>();
         string[] allFilesInPersisntenFolder = Directory.GetFiles(Application.persistentDataPath);
         string[] matchingFiles = allFilesInPersisntenFolder.Where(file => Path.GetFileName(file).Contains(PREFIX)).ToArray();
@@ -208,7 +183,6 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
             LogUI.Instance.SendLogInformation("No profile save files found", LogUI.MessageType.WARNING);
             return _result;
         }
-        Debug.Log("GetProgressDataFromAllProfiles MID");
         foreach (string profileFile in profileFiles)
         {
             string profileName = profileFile.Replace(PREFIX, "");
@@ -221,41 +195,31 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
                 }
             }
         }
-        Debug.Log("GetProgressDataFromAllProfiles result count: " + _result.Count);
         return _result;
     }
 
     // a helper function
     private async UniTask<(bool, string)> ReadProfileTextAsync(string profileName)
     {
-        Debug.Log("ReadProfileTextAsync");
         string assumedFile = GetFullPath(profileName);
         string fileText;
         if (File.Exists(assumedFile))
         {
-            Debug.Log("ReadProfileTextAsync MID");
             try
             {
                 using (StreamReader reader = File.OpenText(assumedFile))
                 {
-                    Debug.Log("ReadProfileTextAsync BEFORE READ");
                     if (Application.platform == RuntimePlatform.WebGLPlayer)
                     {
-                        Debug.Log("Before Delay 1");
                         await UniTask.Delay(50);
-                        Debug.Log("After Delay 1");
                         SyncFiles();
-                        Debug.Log("Before Delay 2");
                         await UniTask.Delay(50);
-                        Debug.Log("After Delay 2");
                         fileText = reader.ReadToEnd();
-                        Debug.Log("ReadProfileTextAsync AFTER READ");
                         return (true, fileText);
                     }
                     else
                     {
                         fileText = await reader.ReadToEndAsync();
-                        Debug.Log("ReadProfileTextAsync AFTER READ");
                         return (true, fileText);
                     }
                 }
@@ -263,6 +227,7 @@ public class LocalSaveManager : SingletonBehaviour<LocalSaveManager>
             catch (Exception e)
             {
                 Debug.LogError("Reading profile text error " + e.Message);
+                LogUI.Instance.SendLogInformation("Reading profile text error " + e.Message);
             }
 
         }
